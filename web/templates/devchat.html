@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Dev Chat</title>
+</head>
+<body>
+    <h1>Dev Chat</h1>
+    <form id="chat-form">
+        <div>
+            <label for="model">Model:</label>
+            <select id="model" name="model">
+                <option value="openai">OpenAI</option>
+                <option value="gpt4all">GPT4All</option>
+            </select>
+        </div>
+        <div>
+            <label for="prompt">Prompt:</label>
+            <textarea id="prompt" name="prompt" rows="4" cols="50"></textarea>
+        </div>
+        <div>
+            <button type="submit">Send</button>
+        </div>
+    </form>
+    <div id="response"></div>
+
+    <script>
+        const form = document.getElementById('chat-form');
+        const responseDiv = document.getElementById('response');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            responseDiv.textContent = '';
+
+            const formData = new FormData(form);
+            const response = await fetch('/devchat/stream', {
+                method: 'POST',
+                body: formData
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while(true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value);
+                responseDiv.textContent += chunk.replace(/data: /g, '').trim() + ' ';
+            }
+        });
+    </script>
+</body>
+</html>

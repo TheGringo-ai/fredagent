@@ -1,0 +1,45 @@
+<body style="background-color: #111; color: white; font-family: sans-serif; min-height: 100vh; display: flex; flex-direction: column;">
+  <header style="background-color: #222; padding: 1rem; margin-bottom: 2rem;">
+    <div style="max-width: 800px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+      <h1 style="font-size: 1.25rem; font-weight: bold; color: #00ffff;">Gringo AI Ops</h1>
+      <nav style="font-size: 0.875rem;">
+        <a href="/chat" style="color: #00ffff; margin-right: 1rem;">Chat</a>
+        <a href="/devchat" style="color: #00ffcc; margin-right: 1rem;">Dev</a>
+        <a href="/agent" style="color: #ccccff; margin-right: 1rem;">Agent</a>
+        <a href="/log/query" style="color: #dabfff; margin-right: 1rem;">Logs</a>
+        <a href="/upload" style="color: #ffcc99; margin-right: 1rem;">Upload</a>
+        <a href="/docquery" style="color: #66ffff;">Search</a>
+      </nav>
+    </div>
+  </header>
+
+  <main style="padding: 0 1rem; flex-grow: 1;">
+    <div style="max-width: 800px; margin: 0 auto;">
+      <h1 style="font-size: 1.5rem; font-weight: bold; color: #00ffff; margin-bottom: 1rem;">{{ title }}</h1>
+      <form method="post" action="/ai" style="padding: 1.5rem; background-color: #222; border-radius: 0.5rem;">
+        <textarea name="prompt" rows="4" style="width: 100%; padding: 1rem; background-color: #333; color: white; border: 1px solid #555; border-radius: 0.5rem;" placeholder="Ask the AI something..."></textarea>
+        <div style="margin-top: 1rem; font-size: 0.875rem;">
+          <label><input type="radio" name="model" value="openai" checked> OpenAI</label>
+          <label><input type="radio" name="model" value="gemini" style="margin-left: 1rem;"> Gemini</label>
+        </div>
+        <button type="submit" style="margin-top: 1rem; background-color: #00ffff; color: black; padding: 0.5rem 1rem; font-weight: bold; border: none; border-radius: 0.25rem;">Send</button>
+      </form>
+
+      {% if chat_log %}
+      <h2 style="font-size: 1.125rem; font-weight: bold; color: #ccc; margin-top: 2rem;">AI Response</h2>
+      {% endif %}
+
+      <div style="background-color: #222; border: 1px solid #333; margin-top: 1.5rem; padding: 1rem; border-radius: 0.5rem; white-space: pre-wrap; font-family: monospace; font-size: 0.875rem; max-height: 60vh; overflow-y: auto;">
+        {% if chat_log %}
+          <pre>{{ chat_log }}</pre>
+        {% else %}
+          <p style="color: #aaa;">No messages yet. Ask something above.</p>
+        {% endif %}
+      </div>
+    </div>
+  </main>
+
+  <footer style="background-color: #222; text-align: center; color: #999; font-size: 0.875rem; padding: 1rem; margin-top: 2rem;">
+    &copy; 2025 Gringo AI Ops. All rights reserved.
+  </footer>
+</body>

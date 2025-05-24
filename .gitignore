@@ -1,0 +1,46 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+
+# Virtual environments
+env/
+.venv/
+
+# VSCode settings
+.vscode/
+
+# macOS metadata
+.DS_Store
+
+# Logs and output
+*.log
+logs/
+*.jsonl
+
+# Secret config
+.env
+.env.*
+
+# Uploads and processed files
+uploads/
+processed/
+*.pdf
+*.docx
+*.txt
+*.md
+
+# Embedding and memory artifacts
+*.pkl
+*.pt
+*.bin
+*.db
+memory/*_index.json
+memory/chroma/
+
+# ngrok metadata
+ngrok.yml
+
+# Misc
+*.swp
