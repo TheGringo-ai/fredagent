@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Gringo AI Ops – History</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+
+        nav {
+            background-color: #333;
+            padding: 10px;
+        }
+
+        nav a {
+            color: white;
+            margin-right: 20px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table thead {
+            background-color: #333;
+            color: white;
+        }
+
+        table th,
+        table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        table tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .no-history {
+            text-align: center;
+            color: #666;
+            margin-top: 40px;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <nav>
+        <a href="/ui">Home</a>
+        <a href="/ui/chat">Chat</a>
+        <a href="/ui/query">Query</a>
+        <a href="/ui/history">History</a>
+        <a href="/ui/upload">Upload</a>
+    </nav>
+    <div class="container">
+        <h2>Query History</h2>
+        {% if history %}
+        <!-- Export buttons and search input -->
+        <div style="margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
+            <button onclick="exportTable('csv')">Export CSV</button>
+            <button onclick="exportTable('json')">Export JSON</button>
+            <button onclick="exportTable('pdf')">Export PDF</button>
+            <input type="text" id="searchInput" placeholder="Search..." style="margin-left: 16px; padding: 6px;">
+        </div>
+        <table id="historyTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Query</th>
+                    <th>Response</th>
+                </tr>
+            </thead>
+            <tbody id="historyTableBody">
+                <!-- Table body will be rendered by JS -->
+            </tbody>
+        </table>
+        <!-- Pagination controls -->
+        <div id="paginationControls" style="margin-top: 16px; display: flex; gap: 8px; align-items: center;"></div>
+        <script>
+            // Fetch history data from the backend API endpoint
+            let historyData = [];
+            let filteredData = [];
+            let currentPage = 1;
+            const rowsPerPage = 10;
+
+            function renderTable(data, page = 1) {
+                const tbody = document.getElementById('historyTableBody');
+                tbody.innerHTML = '';
+                const start = (page - 1) * rowsPerPage;
+                const end = start + rowsPerPage;
+                const pageData = data.slice(start, end);
+                for (const entry of pageData) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${escapeHtml(entry.date)}</td>
+                                     <td>${escapeHtml(entry.query)}</td>
+                                     <td>${escapeHtml(entry.response)}</td>`;
+                    tbody.appendChild(row);
+                }
+            }
+
+            function escapeHtml(text) {
+                if (typeof text !== 'string') return text;
+                return text.replace(/[&<>"']/g, function (m) {
+                    return ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        '"': '&quot;',
+                        "'": '&#39;'
+                    })[m];
+                });
+            }
+
+            function renderPagination(data) {
+                const controls = document.getElementById('paginationControls');
+                controls.innerHTML = '';
+                const totalRows = data.length;
+                const totalPages = Math.ceil(totalRows / rowsPerPage);
+                if (totalPages <= 1) return;
+                // Prev button
+                const prevBtn = document.createElement('button');
+                prevBtn.textContent = 'Prev';
+                prevBtn.disabled = currentPage === 1;
+                prevBtn.onclick = () => { currentPage--; updateTable(); };
+                controls.appendChild(prevBtn);
+                // Page numbers
+                for (let p = 1; p <= totalPages; p++) {
+                    const btn = document.createElement('button');
+                    btn.textContent = p;
+                    btn.disabled = (p === currentPage);
+                    btn.onclick = () => { currentPage = p; updateTable(); };
+                    controls.appendChild(btn);
+                }
+                // Next button
+                const nextBtn = document.createElement('button');
+                nextBtn.textContent = 'Next';
+                nextBtn.disabled = currentPage === totalPages;
+                nextBtn.onclick = () => { currentPage++; updateTable(); };
+                controls.appendChild(nextBtn);
+            }
+
+            function updateTable() {
+                renderTable(filteredData, currentPage);
+                renderPagination(filteredData);
+            }
+
+            // Search/filter logic
+            document.getElementById('searchInput').addEventListener('input', function () {
+                const val = this.value.trim().toLowerCase();
+                filteredData = historyData.filter(entry =>
+                    (entry.date && entry.date.toLowerCase().includes(val)) ||
+                    (entry.query && entry.query.toLowerCase().includes(val)) ||
+                    (entry.response && entry.response.toLowerCase().includes(val))
+                );
+                currentPage = 1;
+                updateTable();
+            });
+
+            // Export functions
+            function exportTable(format) {
+                if (format === 'csv') {
+                    let csv = 'Date,Query,Response\n';
+                    for (const entry of filteredData) {
+                        // Escape double quotes and commas
+                        const row = [entry.date, entry.query, entry.response].map(v =>
+                            `"${String(v).replace(/"/g, '""')}"`
+                        ).join(',');
+                        csv += row + '\n';
+                    }
+                    downloadFile(csv, 'history.csv', 'text/csv');
+                } else if (format === 'json') {
+                    const json = JSON.stringify(filteredData, null, 2);
+                    downloadFile(json, 'history.json', 'application/json');
+                } else if (format === 'pdf') {
+                    exportPDF();
+                }
+            }
+
+            function downloadFile(content, filename, mime) {
+                const blob = new Blob([content], { type: mime });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // Simple PDF export using jsPDF CDN
+            function exportPDF() {
+                if (!window.jsPDF) {
+                    // Load jsPDF from CDN
+                    const script = document.createElement('script');
+                    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                    script.onload = () => _exportPDF();
+                    document.body.appendChild(script);
+                } else {
+                    _exportPDF();
+                }
+            }
+            function _exportPDF() {
+                const { jsPDF } = window.jspdf || window;
+                const doc = new jsPDF();
+                let y = 10;
+                doc.setFontSize(12);
+                doc.text('Query History', 10, y);
+                y += 8;
+                doc.setFontSize(10);
+                doc.text('Date', 10, y);
+                doc.text('Query', 60, y);
+                doc.text('Response', 120, y);
+                y += 6;
+                for (const entry of filteredData) {
+                    if (y > 270) { doc.addPage(); y = 10; }
+                    doc.text(String(entry.date), 10, y);
+                    doc.text(String(entry.query).substring(0, 35), 60, y);
+                    doc.text(String(entry.response).substring(0, 35), 120, y);
+                    y += 6;
+                }
+                doc.save('history.pdf');
+            }
+
+            // Fetch history data on page load and initialize table
+            fetch('/history')
+                .then(res => res.json())
+                .then(data => {
+                    historyData = data;
+                    filteredData = [...historyData];
+                    updateTable();
+                });
+        </script>
+        {% else %}
+        <p class="no-history">No history available.</p>
+        {% endif %}
+    </div>
+</body>
+
+</html>

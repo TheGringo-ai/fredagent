@@ -1,0 +1,52 @@
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
+import subprocess
+import platform
+import datetime
+
+router = APIRouter()
+
+@router.post("/terminal/exec")
+async def execute_command(request: Request):
+data = await request.json()
+command = data.get("command", "")
+try:
+result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=10)
+output = result.stdout + result.stderr
+return {"output": output.strip()}
+except Exception as e:
+return {"output": f"Error: {str(e)}"}
+
+@router.get("/terminal/tools/history")
+async def get_history():
+try:
+with open("terminal.log", "r") as f:
+return {"output": f.read()}
+except FileNotFoundError:
+return {"output": "No history available."}
+
+@router.get("/terminal/tools/systeminfo")
+async def get_system_info():
+info = [
+f"System: {platform.system()}",
+f"Node Name: {platform.node()}",
+f"Release: {platform.release()}",
+f"Version: {platform.version()}",
+f"Machine: {platform.machine()}",
+f"Processor: {platform.processor()}",
+f"Time: {datetime.datetime.now().isoformat()}"
+]
+return {"output": "\n".join(info)}
+
+@router.get("/terminal/tools/help")
+async def get_help():
+help_text = """
+Available Terminal Tools:
+- Type a command in the terminal input to run it
+- Tab [📜 History] shows command history
+- Tab [💻 System Info] shows your system details
+- Tab [❓ Help] shows this message
+Shortcuts:
+- ALT+1: History | ALT+2: System Info | ALT+3: Help
+"""
+return {"output": help_text.strip()}

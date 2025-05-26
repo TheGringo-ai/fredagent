@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title }}</title>
+</head>
+
+<body>
+  <form method="post" action="/reflect" style="margin-bottom: 1em;">
+    <label for="reflection_input"><strong>Reflect with AI:</strong></label><br>
+    <input type="text" id="reflection_input" name="reflection_input" placeholder="Type your reflection here..."
+      style="width: 80%;" required />
+    <button type="submit">Reflect</button>
+  </form>
+
+  {% if chat_log %}
+  <div style="border: 1px solid #ccc; padding: 1em; margin-top: 1em;">
+    <strong>AI Reflection:</strong>
+    <p>{{ chat_log }}</p>
+  </div>
+  {% endif %}
+
+  <!-- Existing chat interface content below -->
+</body>
+
+</html>

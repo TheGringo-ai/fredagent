@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>DevChat</title>
+</head>
+
+<body>
+    <nav style="background-color: #222; padding: 10px;">
+        <a href="/control" style="color: white; margin-right: 20px;">Control</a>
+        <a href="/agent" style="color: white; margin-right: 20px;">Agent</a>
+        <a href="/chat" style="color: white; margin-right: 20px;">Chat</a>
+        <a href="/devchat" style="color: white; margin-right: 20px;">DevChat</a>
+        <a href="/query" style="color: white;">Query</a>
+    </nav>
+    <h1>DevChat Assistant</h1>
+
+    <!-- Goal-based Planner -->
+    <section>
+        <h2>Goal-Based Project Planner</h2>
+        <textarea id="projectGoal" rows="4" placeholder="Describe your project goal..." style="width: 100%;"></textarea>
+        <button onclick="submitGoalPlan()">Generate Plan</button>
+    </section>
+
+    <!-- Plan Preview + Actions -->
+    <section id="plannerResult" style="display:none;">
+        <h3>Generated Plan</h3>
+        <pre id="plannerOutput"></pre>
+        <button onclick="buildFromPlan()">Build This Plan</button>
+        <button onclick="generateDocumentation()">Generate Docs</button>
+    </section>
+
+    <!-- DevAgent Q&A -->
+    <section>
+        <h2>Step-by-Step Setup</h2>
+        <form id="devagent-form">
+            <label>Your Answer:</label>
+            <textarea id="answer" name="answer" rows="3" required></textarea><br />
+            <input type="hidden" id="session_id" name="session_id" value="{{ session_id }}">
+            <button type="submit">Submit Answer</button>
+        </form>
+        <pre id="devagent-response">{{ description }}</pre>
+        <button onclick="triggerBuild()">Build Project</button>
+        <button onclick="saveToLibrary()">Save to Library</button>
+    </section>
+
+    <!-- Library Manager -->
+    <section>
+        <h2>Library</h2>
+        <label for="tagFilter">Filter by Tags:</label>
+        <input type="text" id="tagFilter" placeholder="e.g. python, gcp" oninput="fetchLibraryFiles()"><br />
+
+        <select id="librarySelect" style="width: 100%; margin-top: 8px;"></select><br />
+        <button onclick="loadFromLibrary()">Load From Prompt</button>
+        <button onclick="applySelectedLibrary()">Apply</button>
+        <button onclick="previewLibrary()">Preview</button>
+        <button onclick="deleteLibrary()">Delete</button>
+        <button onclick="editLibraryTags()">Edit Tags</button>
+        <button onclick="renameLibraryEntry()">Rename Entry</button>
+    </section>
+
+    <!-- Output -->
+    <pre
+        id="output">👋 Welcome to DevChat! Ask anything about your project to get started. All tools are live and ready.</pre>
+
+    <!-- Project Explorer -->
+    <section>
+        <h2>Project Explorer</h2>
+        <input type="text" id="explorerPath" placeholder="Enter project folder name" style="width: 300px;">
+        <button onclick="loadExplorer()">Load Files</button>
+        <ul id="explorerList" style="margin-top: 10px;"></ul>
+    </section>
+
+    <!-- Step Execution Monitor -->
+    <section>
+        <h2>Build Progress</h2>
+        <ul id="buildSteps"></ul>
+    </section>
+
+    <!-- Test Generator -->
+    <section>
+        <h2>Tests</h2>
+        <button onclick="generateTests()">Generate Unit Tests</button>
+    </section>
+
+    <script>
+        const sessionId = document.getElementById('session_id').value;
+        const output = document.getElementById("output");
+
+        async function submitGoalPlan() {
+            const goal = document.getElementById("projectGoal").value;
+            const response = await fetch('/dev/plan', {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ goal })
+            });
+            const data = await response.json();
+            const plannerOut = document.getElementById("plannerOutput");
+            document.getElementById("plannerResult").style.display = "block";
+            plannerOut.textContent = data.plan ? JSON.stringify(data.plan, null, 2) : data.response || "Failed to generate plan.";
+        }
+
+        async function buildFromPlan() {
+            const plannerOut = document.getElementById("plannerOutput").textContent;
+            try {
+                const plan = JSON.parse(plannerOut);
+                const response = await fetch('/dev/plan/build', {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan })
+                });
+                const data = await response.json();
+                output.textContent = data.status ? `✅ ${data.status}\nPath: ${data.path}` : `❌ ${data.error}`;
+            } catch (err) {
+                output.textContent = "[PLAN BUILD ERROR] " + err.message;
+            }
+        }
+
+        async function generateDocumentation() {
+            const plannerOut = document.getElementById("plannerOutput").textContent;
+            try {
+                const plan = JSON.parse(plannerOut);
+                const response = await fetch('/dev/plan/docs', {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan })
+                });
+                const data = await response.json();
+                output.textContent = data.status ? `📄 ${data.status}\nFile: ${data.file}` : `❌ ${data.error}`;
+            } catch (err) {
+                output.textContent = "[DOCS ERROR] " + err.message;
+            }
+        }
+
+        async function triggerBuild() {
+            const formData = new FormData();
+            formData.append("session_id", sessionId);
+            const response = await fetch("/dev/build", { method: "POST", body: formData });
+            const data = await response.json();
+            output.textContent = data.status ? `✅ ${data.status}\nPath: ${data.path}` : `❌ ${data.error}`;
+        }
+
+        async function saveToLibrary() {
+            const formData = new FormData();
+            formData.append('session_id', sessionId);
+            const label = prompt("Label this library entry:");
+            if (label) formData.append("label", label);
+            const response = await fetch("/dev/library/save", { method: "POST", body: formData });
+            const data = await response.json();
+            output.textContent = data.status ? `✅ ${data.status}\nSaved to: ${data.file}` : `❌ ${data.error}`;
+            fetchLibraryFiles();
+        }
+
+        async function fetchLibraryFiles() {
+            const tagFilter = document.getElementById("tagFilter").value;
+            const res = await fetch('/dev/library/list' + (tagFilter ? `?tags=${encodeURIComponent(tagFilter)}` : ""));
+            const data = await res.json();
+            const select = document.getElementById("librarySelect");
+            select.innerHTML = "";
+            for (const entry of data.files) {
+                const option = document.createElement("option");
+                option.value = entry.file;
+                option.textContent = `${entry.file} [Tags: ${entry.tags.join(", ")} | Uses: ${entry.uses}]`;
+                select.appendChild(option);
+            }
+        }
+
+        async function loadFromLibrary() {
+            const prompt = prompt("Describe what to load:");
+            if (!prompt) return;
+            const response = await fetch("/dev/library/load", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt })
+            });
+            const data = await response.json();
+            output.textContent = data.error ? `❌ ${data.error}` : `✅ Loaded:\n` + JSON.stringify(data.entry, null, 2);
+        }
+
+        async function applySelectedLibrary() {
+            const file = document.getElementById("librarySelect").value;
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch("/dev/library/apply", { method: "POST", body: formData });
+            const data = await res.json();
+            output.textContent = data.status ? `✅ ${data.status}\nPath: ${data.path}` : `❌ ${data.error}`;
+        }
+
+        async function previewLibrary() {
+            const file = document.getElementById("librarySelect").value;
+            const response = await fetch(`/dev/library/loadfile?file=${encodeURIComponent(file)}`);
+            const data = await response.json();
+            output.textContent = data.error ? `❌ ${data.error}` : `📄 Preview:\n` + JSON.stringify(data.entry, null, 2);
+        }
+
+        async function deleteLibrary() {
+            const file = document.getElementById("librarySelect").value;
+            if (!confirm(`Are you sure you want to delete ${file}?`)) return;
+            const res = await fetch("/dev/library/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ file })
+            });
+            const data = await res.json();
+            output.textContent = data.status ? `🗑️ Deleted: ${file}` : `❌ ${data.error}`;
+            fetchLibraryFiles();
+        }
+
+        async function editLibraryTags() {
+            const file = document.getElementById("librarySelect").value;
+            const newTags = prompt("Enter new tags (comma-separated):");
+            if (!newTags) return;
+            const res = await fetch("/dev/library/tags", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ file, tags: newTags })
+            });
+            const data = await res.json();
+            output.textContent = data.status ? `✅ Tags updated` : `❌ ${data.error}`;
+            fetchLibraryFiles();
+        }
+
+        async function renameLibraryEntry() {
+            const file = document.getElementById("librarySelect").value;
+            const newName = prompt("New file name (include .json):");
+            if (!newName || !newName.endsWith(".json")) return alert("Invalid file name.");
+            const res = await fetch("/dev/library/rename", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ file, new_name: newName })
+            });
+            const data = await res.json();
+            output.textContent = data.status ? `✅ Renamed` : `❌ ${data.error}`;
+            fetchLibraryFiles();
+        }
+
+        window.addEventListener("load", fetchLibraryFiles);
+
+        // Q&A form
+        document.getElementById("devagent-form").addEventListener("submit", async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch("/dev/answer", {
+                method: "POST",
+                body: formData
+            });
+            const data = await response.json();
+            document.getElementById("devagent-response").textContent = data.question || data.message || "No response.";
+        });
+
+        // --- Project Explorer ---
+        async function loadExplorer() {
+            const folder = document.getElementById("explorerPath").value;
+            const res = await fetch(`/dev/explorer?folder=${encodeURIComponent(folder)}`);
+            const data = await res.json();
+            const list = document.getElementById("explorerList");
+            list.innerHTML = "";
+            data.files.forEach(f => {
+                const li = document.createElement("li");
+                const link = document.createElement("a");
+                link.href = `/dev/explorer/view?path=${encodeURIComponent(f.path)}`;
+                link.target = "_blank";
+                link.textContent = f.name;
+                li.appendChild(link);
+                list.appendChild(li);
+            });
+        }
+
+        // --- Test Generator ---
+        async function generateTests() {
+            const plannerOut = document.getElementById("plannerOutput").textContent;
+            try {
+                const plan = JSON.parse(plannerOut);
+                const response = await fetch('/dev/plan/tests', {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan })
+                });
+                const data = await response.json();
+                output.textContent = data.status ? `🧪 ${data.status}` : `❌ ${data.error}`;
+            } catch (err) {
+                output.textContent = "[TEST ERROR] " + err.message;
+            }
+        }
+
+        // --- Step Execution Visual ---
+        function updateBuildSteps(steps) {
+            const ul = document.getElementById("buildSteps");
+            ul.innerHTML = "";
+            steps.forEach(step => {
+                const li = document.createElement("li");
+                li.textContent = step;
+                ul.appendChild(li);
+            });
+        }
+
+        function toggleMemoryPanel() {
+            const panel = document.getElementById("memoryPanel");
+            panel.style.display = panel.style.display === "none" ? "block" : "none";
+        }
+
+        async function exportLogs(format) {
+            const res = await fetch(`/export_logs?format=${format}`);
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `logs.${format}`;
+            a.click();
+        }
+
+        async function searchMemorySummary(e) {
+            e.preventDefault();
+            const query = document.getElementById("memoryQuery").value;
+            const intent = document.getElementById("intentSelect").value;
+            const form = new FormData();
+            form.append("query", query);
+            form.append("intent", intent);
+
+            const res = await fetch("/search_memory_summary", { method: "POST", body: form });
+            const data = await res.json();
+
+            const resultBox = document.getElementById("memoryResults");
+            if (!data.results || !data.results.length) {
+                resultBox.textContent = "❌ No matches found.";
+                return;
+            }
+
+            let html = `<h4>🧠 Summary:</h4><pre>${data.summary}</pre><ul>`;
+            for (const r of data.results) {
+                html += `<li><strong>[${r.intent}]</strong> <em>${r.timestamp}</em><br>${r.summary}</li>`;
+            }
+            html += "</ul>";
+            resultBox.innerHTML = html;
+        }
+
+        // --- Vector Memory Search ---
+        async function runVectorMemorySearch(event) {
+            event.preventDefault();
+            const output = document.getElementById("vectorMemoryOutput");
+            output.textContent = "⏳ Searching vector memory...";
+
+            const query = document.getElementById("vectorQuery").value;
+            const intent = document.getElementById("vectorIntent").value;
+            const top_k = document.getElementById("vectorTopK").value;
+
+            const formData = new FormData();
+            formData.append("query", query);
+            formData.append("intent", intent);
+            formData.append("top_k", top_k);
+
+            const response = await fetch("/memory/search", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+            if (data.status === "ok") {
+                let display = data.results.map(r =>
+                    `🔸 ${r.intent.toUpperCase()} @ ${r.timestamp}\n${r.text || r.summary}\n`
+                ).join("\n");
+                output.textContent = display || "No matches found.";
+            } else {
+                output.textContent = `❌ ${data.message}`;
+            }
+        }
+    </script>
+
+    <!-- Memory Tools Panel -->
+    <section>
+        <h2 style="cursor:pointer;" onclick="toggleMemoryPanel()">🧠 Memory Tools ▼</h2>
+        <div id="memoryPanel" style="display: none; padding-left: 1rem;">
+            <form id="memorySearchForm" onsubmit="searchMemorySummary(event)">
+                <label for="memoryQuery">Search Memory Summary</label>
+                <input type="text" id="memoryQuery" placeholder="e.g. upload error" />
+                <label for="intentSelect">Filter by Intent</label>
+                <select id="intentSelect">
+                    <option value="">All</option>
+                    <option value="question">Question</option>
+                    <option value="error">Error</option>
+                    <option value="instruction">Instruction</option>
+                    <option value="note">Note</option>
+                </select>
+                <button type="submit">Search</button>
+            </form>
+            <div>
+                <h4>📄 Export Logs</h4>
+                <button onclick="exportLogs('json')">Download JSON</button>
+                <button onclick="exportLogs('csv')">Download CSV</button>
+            </div>
+            <div id="memoryResults" style="margin-top:1rem;"></div>
+            <hr />
+            <form id="vectorMemoryForm" onsubmit="runVectorMemorySearch(event)">
+                <label for="vectorQuery">Vector Memory Search</label>
+                <input type="text" id="vectorQuery" name="query" placeholder="e.g. PLC fault timeout" required />
+                <label for="vectorIntent">Intent</label>
+                <select id="vectorIntent" name="intent">
+                    <option value="">All</option>
+                    <option value="question">Question</option>
+                    <option value="error">Error</option>
+                    <option value="instruction">Instruction</option>
+                    <option value="note">Note</option>
+                </select>
+                <label for="vectorTopK">Top K</label>
+                <input type="number" id="vectorTopK" name="top_k" value="5" min="1" max="20" />
+                <button type="submit">Run Vector Search</button>
+            </form>
+            <pre id="vectorMemoryOutput" class="scroll-output">⏳ Awaiting vector memory query...</pre>
+            <hr />
+            <button onclick="loadSystemStatus()">📊 Show System Status</button>
+            <pre id="systemStatusOutput">📡 System status not loaded.</pre>
+        </div>
+    </section>
+    <script>
+        // --- System Status ---
+        async function loadSystemStatus() {
+            const res = await fetch("/status/system");
+            const data = await res.json();
+            const output = document.getElementById("systemStatusOutput");
+            output.textContent = `
+        📁 Logs: ${data.logs}
+        🧠 Vectors: ${data.vectors}
+        ⚙️ Model: ${data.model}
+        📦 Status: ${data.memory_status}
+        `.trim();
+        }
+    </script>
+</body>
+
+</html>

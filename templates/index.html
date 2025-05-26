@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description"
+    content="Gringo AI Ops - Unified AI Command Center for task automation, dev tools, and live agents.">
+  <meta name="theme-color" content="#333" />
+  <link rel="icon" href="/static/favicon.ico" />
+  <title>Gringo AI Ops</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f9f9f9;
+      color: #222;
+    }
+
+    header {
+      background-color: #333;
+      color: white;
+      padding: 1rem 2rem;
+    }
+
+    .navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .navbar .brand {
+      font-size: 1.5rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .nav-links a {
+      margin-right: 15px;
+      color: white;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .nav-links a:hover {
+      text-decoration: underline;
+    }
+
+    .hero-section {
+      padding: 3rem 1rem 2rem;
+      text-align: center;
+      background-color: #eaeaea;
+    }
+
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      padding: 2rem;
+      max-width: 1000px;
+      margin: auto;
+    }
+
+    .tool-link {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 1rem;
+      text-align: center;
+      text-decoration: none;
+      color: #222;
+      font-size: 1.1rem;
+      font-weight: 500;
+      transition: background-color 0.3s ease;
+    }
+
+    .tool-link:hover {
+      background-color: #f0f0f0;
+    }
+
+    .status {
+      margin-top: 0.75rem;
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    @media (max-width: 600px) {
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .nav-links {
+        margin-top: 0.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body class="container">
+  <!-- Shared Navigation Bar -->
+  <header>
+    <div class="navbar">
+      <span class="brand">Gringo AI Ops</span>
+      <nav class="nav-links">
+        <a href="/chat">Chat</a>
+        <a href="/devchat">Dev</a>
+        <a href="/agent">Agent</a>
+        <a href="/log/query">Logs</a>
+        <a href="/upload">Upload</a>
+        <a href="/docquery">Search</a>
+      </nav>
+    </div>
+    <div class="status">
+      <strong>Status:</strong> ✅ System Ready — Logs: 204 entries | Indexed Vectors: 162
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <h2>
+        Unified AI Command Center
+      </h2>
+      <p>
+        Choose a tool below to get started with <span class="text-cyan-300 font-semibold">Gringo AI Ops</span>.
+      </p>
+    </section>
+    <!-- Tool Grid -->
+    <section>
+      <div class="tool-grid">
+        <a class="tool-link" href="/chat" title="Chat with an AI assistant.">💬 AI Chat</a>
+        <a class="tool-link" href="/devchat" title="Plan, build, and scaffold projects with AI.">🧠 Dev Assistant</a>
+        <a class="tool-link" href="/agent" title="Send direct commands and switch models.">⚙️ Live Agent</a>
+        <a class="tool-link" href="/log/query" title="Search and analyze memory logs.">📜 Query Logs</a>
+        <a class="tool-link" href="/upload" title="Upload documents and files.">📂 Upload File</a>
+        <a class="tool-link" href="/docquery" title="Search knowledge base and documents.">🔍 Search Docs</a>
+      </div>
+    </section>
+  </main>
+</body>
+
+</html>

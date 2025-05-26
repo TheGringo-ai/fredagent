@@ -1,10 +1,182 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Agent UI</title>
-</head>
-<body>
-    <h1>Agent Interface</h1>
-    <p>The Agent UI is now working!</p>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<div class="container dark-mode">
+  <h1>🧠 DevAgent Command Center</h1>
+
+  <label for="instruction">Command</label>
+  <textarea id="instruction" name="instruction" rows="4" placeholder="Give the agent a task or command..."></textarea>
+
+  <label for="modelSelect">Model</label>
+  <select id="modelSelect" name="modelSelect">
+    <option value="gpt-3.5-turbo">GPT-3.5</option>
+    <option value="gpt-4">GPT-4</option>
+    <option value="gemini-pro">Gemini</option>
+  </select>
+
+  <div class="checkbox-group">
+    <label><input type="checkbox" id="streamToggle" name="streamToggle"> Enable Streaming</label>
+    <label><input type="checkbox" id="logToggle" name="logToggle" checked> Log to Memory</label>
+  </div>
+
+  <label for="templateSelect">Templates</label>
+  <select id="templateSelect" name="templateSelect" onchange="applyTemplate(this.value)">
+    <option value="">-- Choose a command --</option>
+    <option value="Summarize this file">📝 Summarize File</option>
+    <option value="Diagnose this error traceback">🚨 Diagnose Error</option>
+    <option value="Fix the following Python script">🛠️ Auto Fix Script</option>
+    <option value="Generate README from source">📄 Generate README</option>
+    <option value="Build a web app from this spec">🚀 Build Web App</option>
+  </select>
+
+  <label for="uploadFile">Upload File</label>
+  <input type="file" id="uploadFile" name="uploadFile" />
+
+  <label for="execMode">Execution Mode</label>
+  <select id="execMode" name="execMode">
+    <option value="dry">Dry Run (Suggest)</option>
+    <option value="apply">Apply Fix</option>
+  </select>
+
+  <div id="historyPanel" style="margin-top:2rem; border-top:1px solid #ccc; padding-top:1rem;">
+    <h3>🕘 History</h3>
+    <ul id="historyList" style="list-style:none; padding-left:0;"></ul>
+    <div style="margin-top: 0.5rem;">
+      <button onclick="exportHistory('csv')">📤 Export CSV</button>
+      <button onclick="exportHistory('json')">📤 Export JSON</button>
+    </div>
+  </div>
+
+  <button onclick="submitCommand()">Send Command</button>
+  <button onclick="resetForm()">🔄 Reset</button>
+
+  <div id="responseBox">Response will appear here...</div>
+  <div id="loadingSpinner" style="display:none;">
+    <img src="/static/spinner.svg" alt="Loading..." width="24" />
+  </div>
+  <div id="responseTools" style="margin-top: 1rem; display: flex; gap: 10px;">
+    <label><input type="checkbox" onchange="toggleDarkMode(this.checked)"> 🌙 Dark Mode</label>
+    <button onclick="toggleResponse()">👁️ Toggle Response</button>
+    <button onclick="copyResponse()">📋 Copy Response</button>
+  </div>
+</div>
+
+<script>
+  function applyTemplate(template) {
+    document.getElementById("instruction").value = template;
+  }
+
+  function updateHistory(cmd) {
+    const list = document.getElementById("historyList");
+    const entry = document.createElement("li");
+    entry.textContent = cmd;
+    list.prepend(entry);
+  }
+
+  async function submitCommand() {
+    const instruction = document.getElementById("instruction").value;
+    const model = document.getElementById("modelSelect").value;
+    const stream = document.getElementById("streamToggle").checked;
+    const log = document.getElementById("logToggle").checked;
+    const execMode = document.getElementById("execMode").value;
+    const fileInput = document.getElementById("uploadFile");
+
+    const responseBox = document.getElementById("responseBox");
+    const sendButton = document.querySelector("button[onclick='submitCommand()']");
+    const spinner = document.getElementById("loadingSpinner");
+    sendButton.disabled = true;
+    spinner.style.display = "block";
+    responseBox.textContent = "";
+
+    let fileData = "";
+    if (fileInput.files.length > 0) {
+      const file = fileInput.files[0];
+      fileData = await file.text();
+    }
+
+    const filename = fileInput.files.length > 0 ? fileInput.files[0].name : "";
+
+    const payload = {
+      instruction,
+      model,
+      stream,
+      log,
+      exec_mode: execMode,
+      file_content: fileData,
+      filename: filename
+    };
+
+    try {
+      const response = await fetch("/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        responseBox.textContent = data.response || "✅ Done.";
+        updateHistory(instruction);
+      } else {
+        const errorText = await response.text();
+        responseBox.textContent = "❌ Error: " + errorText;
+      }
+    } catch (err) {
+      responseBox.textContent = "❌ Fetch failed: " + err.message;
+    } finally {
+      sendButton.disabled = false;
+      spinner.style.display = "none";
+    }
+  }
+
+  function resetForm() {
+    document.getElementById("instruction").value = "";
+    document.getElementById("modelSelect").selectedIndex = 0;
+    document.getElementById("streamToggle").checked = false;
+    document.getElementById("logToggle").checked = true;
+    document.getElementById("templateSelect").selectedIndex = 0;
+    document.getElementById("uploadFile").value = "";
+    document.getElementById("execMode").selectedIndex = 0;
+    document.getElementById("responseBox").textContent = "Response will appear here...";
+  }
+
+  function exportHistory(format) {
+    const items = Array.from(document.querySelectorAll("#historyList li")).map(li => li.textContent);
+    if (format === "csv") {
+      const csvContent = "data:text/csv;charset=utf-8," + items.map(e => `"${e}"`).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "history.csv");
+      document.body.appendChild(link);
+      link.click();
+    } else if (format === "json") {
+      const blob = new Blob([JSON.stringify(items, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "history.json";
+      document.body.appendChild(link);
+      link.click();
+    }
+  }
+
+  function toggleDarkMode(isOn) {
+    const container = document.querySelector(".container");
+    container.classList.toggle("dark-mode", isOn);
+  }
+</script>
+<script>
+  function toggleResponse() {
+    const box = document.getElementById("responseBox");
+    box.style.display = box.style.display === "none" ? "block" : "none";
+  }
+
+  function copyResponse() {
+    const text = document.getElementById("responseBox").textContent;
+    navigator.clipboard.writeText(text)
+      .then(() => alert("Copied to clipboard ✅"))
+      .catch(err => alert("Failed to copy ❌"));
+  }
+</script>
+<script src="/static/scripts/agent.js"></script>
+{% endblock %}
