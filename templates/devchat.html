@@ -7,14 +7,18 @@
 </head>
 
 <body>
-    <nav style="background-color: #222; padding: 10px;">
-        <a href="/control" style="color: white; margin-right: 20px;">Control</a>
-        <a href="/agent" style="color: white; margin-right: 20px;">Agent</a>
-        <a href="/chat" style="color: white; margin-right: 20px;">Chat</a>
-        <a href="/devchat" style="color: white; margin-right: 20px;">DevChat</a>
-        <a href="/query" style="color: white;">Query</a>
+    <nav style="margin-bottom: 1em; font-size: 0.95rem;">
+        <a href="/control" style="margin-right: 1em;">🎛️ Control</a>
+        <a href="/chat" style="margin-right: 1em;">💬 Chat</a>
+        <a href="/devchat" style="margin-right: 1em;">🧠 Dev</a>
+        <a href="/agent" style="margin-right: 1em;">⚙️ Live Agent</a>
+        <a href="/agent_tools" style="margin-right: 1em;">🛠️ Tools</a>
     </nav>
-    <h1>DevChat Assistant</h1>
+    <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.5em;">
+        <span><a href="/">Home</a> &raquo; </span>
+        <span style="font-weight: bold;">DevChat</span>
+    </nav>
+    <h2 style="margin-bottom: 1em;">🧠 DevChat Assistant</h2>
 
     <!-- Goal-based Planner -->
     <section>
@@ -29,6 +33,8 @@
         <pre id="plannerOutput"></pre>
         <button onclick="buildFromPlan()">Build This Plan</button>
         <button onclick="generateDocumentation()">Generate Docs</button>
+        <button onclick="previewDocs()">📄 Preview Docs</button>
+        <button onclick="downloadDocs()">💾 Export ZIP</button>
     </section>
 
     <!-- DevAgent Q&A -->
@@ -85,6 +91,43 @@
     </section>
 
     <script>
+        // --- Docs Preview/Export ---
+        async function previewDocs() {
+            const plannerOut = document.getElementById("plannerOutput").textContent;
+            try {
+                const plan = JSON.parse(plannerOut);
+                const res = await fetch('/dev/plan/docs/preview', {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan })
+                });
+                const data = await res.text();
+                const w = window.open();
+                w.document.write("<pre>" + data + "</pre>");
+            } catch (err) {
+                output.textContent = "[PREVIEW ERROR] " + err.message;
+            }
+        }
+
+        async function downloadDocs() {
+            const plannerOut = document.getElementById("plannerOutput").textContent;
+            try {
+                const plan = JSON.parse(plannerOut);
+                const res = await fetch('/dev/plan/docs/export', {
+                    method: 'POST',
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan })
+                });
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "project_docs.zip";
+                a.click();
+            } catch (err) {
+                output.textContent = "[EXPORT ERROR] " + err.message;
+            }
+        }
         const sessionId = document.getElementById('session_id').value;
         const output = document.getElementById("output");
 
@@ -367,6 +410,19 @@
         }
     </script>
 
+    <section>
+        <h2>🔍 Filter Logs</h2>
+        <form id="logFilterForm">
+            <input type="text" placeholder="Session ID" name="session_id">
+            <input type="text" placeholder="Agent" name="agent">
+            <input type="datetime-local" name="start_time">
+            <input type="datetime-local" name="end_time">
+            <input type="text" placeholder="Contains..." name="contains">
+            <button type="submit">Search Logs</button>
+        </form>
+        <pre id="logResults" style="white-space: pre-wrap; background: #f8f8f8; padding: 1em;"></pre>
+    </section>
+
     <!-- Memory Tools Panel -->
     <section>
         <h2 style="cursor:pointer;" onclick="toggleMemoryPanel()">🧠 Memory Tools ▼</h2>
@@ -425,6 +481,16 @@
         📦 Status: ${data.memory_status}
         `.trim();
         }
+
+        // --- Log Filter Panel ---
+        document.getElementById('logFilterForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const form = new FormData(e.target);
+            const params = new URLSearchParams(form).toString();
+            const res = await fetch(`/devchat/logs/filter?${params}`);
+            const data = await res.json();
+            document.getElementById('logResults').textContent = JSON.stringify(data, null, 2);
+        });
     </script>
 </body>
 

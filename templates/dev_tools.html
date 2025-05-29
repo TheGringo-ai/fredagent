@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <nav style="margin-bottom: 1em; font-size: 0.95rem;">
+        <a href="/control" style="margin-right: 1em;">🎛️ Control</a>
+        <a href="/chat" style="margin-right: 1em;">💬 Chat</a>
+        <a href="/devchat" style="margin-right: 1em;">🧠 Dev</a>
+        <a href="/agent" style="margin-right: 1em;">⚙️ Live Agent</a>
+        <a href="/agent_tools" style="margin-right: 1em;">🛠️ Tools</a>
+    </nav>
+    <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.5em;">
+        <span><a href="/">Home</a> &raquo; </span>
+        <span style="font-weight: bold;">Dev Tools</span>
+    </nav>
+    <h2 style="margin-bottom: 1em;">🛠️ Developer Tools</h2>
+    <form id="devToolsForm">
+        <div class="form-group">
+            <label for="goalInput">📌 Project Goal</label>
+            <textarea class="form-control" id="goalInput" rows="3"
+                placeholder="Describe what you want to build..."></textarea>
+        </div>
+        <div class="mt-3">
+            <button type="button" class="btn btn-primary" onclick="sendPlan()">🧠 Generate Plan</button>
+            <button type="button" class="btn btn-warning" onclick="diagnosePlan()">🩺 Diagnose</button>
+            <button type="button" class="btn btn-success" onclick="patchPlan()">🩹 Patch</button>
+            <button type="button" class="btn btn-dark" onclick="autoBuild()">🤖 Auto-Build</button>
+            <button type="reset" class="btn btn-outline-secondary">Clear</button>
+        </div>
+    </form>
+
+    <div class="mt-4">
+        <h4>📤 Output</h4>
+        <pre id="devOutput" class="bg-light p-3 border rounded" style="white-space: pre-wrap;"></pre>
+    </div>
+</div>
+
+<script>
+    async function sendPlan() {
+        const goal = document.getElementById("goalInput").value;
+        const res = await fetch("/dev/plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ goal })
+        });
+        const data = await res.json();
+        document.getElementById("devOutput").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function diagnosePlan() {
+        const goal = document.getElementById("goalInput").value;
+        const res = await fetch("/dev/plan/diagnose", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plan: goal.split("\n") })
+        });
+        const data = await res.json();
+        document.getElementById("devOutput").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function patchPlan() {
+        const goal = document.getElementById("goalInput").value;
+        const res = await fetch("/dev/plan/patch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plan: goal.split("\n") })
+        });
+        const data = await res.json();
+        document.getElementById("devOutput").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function autoBuild() {
+        const goal = document.getElementById("goalInput").value;
+        const res = await fetch("/dev/plan/auto", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ goal })
+        });
+        const data = await res.json();
+        document.getElementById("devOutput").textContent = JSON.stringify(data, null, 2);
+    }
+</script>
+{% endblock %}

@@ -1,34 +1,85 @@
 {% extends "base.html" %}
 
 {% block content %}
+<nav style="margin-bottom: 1em; font-size: 0.95rem;">
+    <a href="/control" style="margin-right: 1em;">🎛️ Control</a>
+    <a href="/chat" style="margin-right: 1em;">💬 Chat</a>
+    <a href="/devchat" style="margin-right: 1em;">🧠 Dev</a>
+    <a href="/agent" style="margin-right: 1em;">⚙️ Live Agent</a>
+    <a href="/agent_tools" style="text-decoration: underline; font-weight: bold;">🛠️ Tools</a>
+</nav>
 <div class="page-section">
-    <h1>🛠️ Agent Tools</h1>
+    <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.5em;">
+        <span><a href="/">Home</a> &raquo; </span>
+        <span><a href="/control">Control Panel</a> &raquo; </span>
+        <span style="font-weight: bold;">Agent Tools</span>
+    </nav>
+    <h2 style="margin-bottom: 1em;">🛠️ Agent Tools Dashboard</h2>
 
     <section>
-        <h2>🧠 Diagnose Code</h2>
-        <form action="/diagnose-error" method="post">
-            <textarea name="traceback" rows="10" cols="80" placeholder="Paste traceback here..."></textarea><br>
-            <button type="submit">🧪 Diagnose</button>
+        <h2>🧠 Agent Assistant</h2>
+        <form id="agentToolForm">
+            <textarea name="traceback" id="traceInput" rows="10" cols="80"
+                placeholder="Paste traceback or code here..."></textarea><br>
+            <label><input type="radio" name="action" value="diagnose" checked> 🧪 Diagnose</label>
+            <label><input type="radio" name="action" value="auto_fix"> 🛠️ Auto Fix</label>
+            <label><input type="radio" name="action" value="summarize"> 📄 Summarize</label>
+            <label><input type="radio" name="action" value="patch"> 🩹 Plan Patch</label><br>
+            <button type="submit">▶️ Run Agent Tool</button>
         </form>
+        <pre id="agentToolResult" style="background:#eef; padding:1em; margin-top:1em;"></pre>
     </section>
 
     <section>
-        <h2>🔧 Auto Fix Issues</h2>
-        <form action="/agent/auto_fix" method="post">
-            <textarea name="traceback" rows="10" cols="80" placeholder="Paste traceback to auto-fix..."></textarea><br>
-            <button type="submit">🛠️ Auto Fix</button>
+        <h2>🗂️ Fred AI Plan Assist</h2>
+        <form id="planAssistForm">
+            <input type="text" name="prompt" id="planPrompt" placeholder="What do you want to plan?" style="width: 80%;"
+                required />
+            <button type="submit">🧠 Generate Plan</button>
         </form>
+        <pre id="planResult" style="background:#f5f5f5; padding:1em; margin-top:1em;"></pre>
     </section>
 
-    <section>
-        <h2>📝 Summary</h2>
-        <form action="/summarize" method="post">
-            <textarea name="text" rows="6" cols="80"
-                placeholder="Paste code or logs for summarization..."></textarea><br>
-            <button type="submit">📄 Summarize</button>
-        </form>
-    </section>
-
-    <p><a href="/control">⬅️ Back to Control Panel</a></p>
+    <p style="margin-top: 2em;">Navigate using the bar above or <a href="/control">return to Control Panel</a>.</p>
 </div>
+
+<script>
+    document.getElementById("agentToolForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const input = document.getElementById("traceInput").value;
+        const action = document.querySelector("input[name='action']:checked").value;
+        const result = document.getElementById("agentToolResult");
+
+        let url = {
+            diagnose: "/diagnose-error",
+            auto_fix: "/agent/auto_fix",
+            summarize: "/summarize",
+            patch: "/dev/plan/patch"
+        }[action];
+
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ [action === "summarize" ? "text" : "traceback"]: input })
+        });
+        const data = await res.json();
+        result.textContent = JSON.stringify(data, null, 2);
+    });
+
+    document.getElementById("planAssistForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const prompt = document.getElementById("planPrompt").value;
+        const result = document.getElementById("planResult");
+
+        const res = await fetch("/fredai/plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt })
+        });
+        const data = await res.json();
+        result.textContent = data.steps
+            ? data.steps.map(s => `Step ${s.step}: ${s.action}\n→ ${s.details}`).join("\n\n")
+            : "Failed to generate plan.";
+    });
+</script>
 {% endblock %}

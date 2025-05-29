@@ -8,6 +8,11 @@
 </head>
 
 <body>
+  <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.5em;">
+    <span><a href="/">Home</a> &raquo; </span>
+    <span style="font-weight: bold;">Chat</span>
+  </nav>
+  <h2 style="margin-bottom: 1em;">💬 Fred AI Chat Interface</h2>
   <form method="post" action="/reflect" style="margin-bottom: 1em;">
     <label for="reflection_input"><strong>Reflect with AI:</strong></label><br>
     <input type="text" id="reflection_input" name="reflection_input" placeholder="Type your reflection here..."
@@ -22,7 +27,98 @@
   </div>
   {% endif %}
 
+  <hr>
+  <h3>🕘 View Past Reflections</h3>
+  <form id="logFilterForm" style="margin-bottom: 1em;">
+    <input type="text" name="contains" placeholder="Search logs..." />
+    <input type="number" name="limit" placeholder="Limit" value="10" />
+    <input type="number" name="skip" placeholder="Skip" value="0" />
+    <button type="submit">Fetch Logs</button>
+  </form>
+  <pre id="logResults" style="background: #f8f8f8; padding: 1em; white-space: pre-wrap;"></pre>
+
+  <hr>
+  <h3>📋 Generate Plan with Fred AI</h3>
+  <form id="planRequestForm" style="margin-bottom: 1em;">
+    <input type="text" name="prompt" placeholder="What do you want to plan?" style="width: 80%;" required />
+    <button type="submit">Generate Plan</button>
+  </form>
+  <pre id="planResults" style="background: #f0f8ff; padding: 1em; white-space: pre-wrap;"></pre>
+
   <!-- Existing chat interface content below -->
+
+  <script>
+    document.getElementById("logFilterForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const params = new URLSearchParams(form).toString();
+      const res = await fetch("/memory/logs/recent?" + params);
+      const data = await res.json();
+      const container = document.getElementById("logResults");
+      container.innerHTML = "";
+      if (data.data.logs.length === 0) {
+        container.textContent = "No logs found.";
+      } else {
+        data.data.logs.forEach((log, index) => {
+          const wrapper = document.createElement("div");
+          wrapper.style.border = "1px solid #ccc";
+          wrapper.style.marginBottom = "1em";
+          wrapper.style.padding = "0.5em";
+          wrapper.innerHTML = `
+          <strong>📝 ${log.timestamp}</strong>
+          <pre style="white-space: pre-wrap;">${JSON.stringify(log, null, 2)}</pre>
+          <form method="post" action="/reflect">
+            <input type="hidden" name="reflection_input" value="${log.response || ''}">
+            <button type="submit">Send to Reflection</button>
+          </form>
+        `;
+          container.appendChild(wrapper);
+        });
+      }
+    });
+
+    document.getElementById("planRequestForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const res = await fetch("/fredai/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: form.get("prompt") })
+      });
+      const data = await res.json();
+      if (data.steps) {
+        const formatted = data.steps.map(s => `Step ${s.step}: ${s.action}\n→ ${s.details}`).join("\n\n");
+        const planBlock = `
+          <pre style="background: #f0f8ff; padding: 1em; white-space: pre-wrap;">${formatted}</pre>
+          <div style="display: flex; gap: 1em; flex-wrap: wrap;">
+            <form method="post" action="/reflect">
+              <input type="hidden" name="reflection_input" value="${formatted.replace(/"/g, '&quot;')}" />
+              <button type="submit" style="padding: 0.5em 1em;">🧠 Reflect</button>
+            </form>
+            <button onclick="downloadPlan('${data.plan_id}', \`${formatted.replace(/`/g, '\\`')}\`)" style="padding: 0.5em 1em;">📥 Export</button>
+            <form method="post" action="/taskboard/save">
+              <input type="hidden" name="plan_id" value="${data.plan_id}" />
+              <input type="hidden" name="plan_text" value="${formatted.replace(/"/g, '&quot;')}" />
+              <button type="submit" style="padding: 0.5em 1em;">📌 Save to Taskboard</button>
+            </form>
+          </div>
+        `;
+        document.getElementById("planResults").innerHTML = planBlock;
+      } else {
+        document.getElementById("planResults").textContent = "Failed to generate plan.";
+      }
+    });
+
+    function downloadPlan(planId, content) {
+      const blob = new Blob([content], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${planId || "fred_plan"}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
 </body>
 
 </html>

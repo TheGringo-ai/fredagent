@@ -82,6 +82,18 @@
       background-color: #f0f0f0;
     }
 
+    .tool-link.new {
+      border-color: #0077cc;
+      background-color: #e6f2ff;
+      font-weight: 600;
+    }
+
+    .tool-link.new::after {
+      content: "🆕";
+      margin-left: 6px;
+      color: #0077cc;
+    }
+
     .status {
       margin-top: 0.75rem;
       font-size: 0.9rem;
@@ -113,6 +125,12 @@
         <a href="/log/query">Logs</a>
         <a href="/upload">Upload</a>
         <a href="/docquery">Search</a>
+        <a href="/history">History</a>
+        <a href="/terminal">Terminal</a>
+        <a href="/control">Control</a>
+        <a href="/docs_ui">Docs</a>
+        <a href="/agent_tools">Tools</a>
+        <a href="/pricing">Pricing</a>
       </nav>
     </div>
     <div class="status">
@@ -126,19 +144,43 @@
       <h2>
         Unified AI Command Center
       </h2>
+      <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin: 1em auto;">
+        <span><a href="/">Home</a></span>
+      </nav>
       <p>
         Choose a tool below to get started with <span class="text-cyan-300 font-semibold">Gringo AI Ops</span>.
       </p>
     </section>
+    <section style="text-align: center; margin-top: 2rem;">
+      <h3>🚀 Quick Access</h3>
+      <a class="tool-link new" href="/fredai/plan">🗂️ Generate Plan</a>
+      <a class="tool-link" href="/control">🎛️ System Control</a>
+      <a class="tool-link" href="/agent">⚙️ Live Agent</a>
+    </section>
     <!-- Tool Grid -->
     <section>
+      <p style="text-align: center; font-size: 1.1rem; color: #0077cc; font-weight: 600;">
+        ✨ New tools just launched: FredAI Plan Generator & Unified Control Panel
+      </p>
       <div class="tool-grid">
+        <h3 style="grid-column: 1/-1;">🧠 AI Interfaces</h3>
         <a class="tool-link" href="/chat" title="Chat with an AI assistant.">💬 AI Chat</a>
         <a class="tool-link" href="/devchat" title="Plan, build, and scaffold projects with AI.">🧠 Dev Assistant</a>
         <a class="tool-link" href="/agent" title="Send direct commands and switch models.">⚙️ Live Agent</a>
+        <a class="tool-link new" href="/fredai/plan" title="Generate step-by-step plans using Fred AI.">🗂️ Plan
+          Generator</a>
+
+        <h3 style="grid-column: 1/-1;">🗂️ Data Tools</h3>
         <a class="tool-link" href="/log/query" title="Search and analyze memory logs.">📜 Query Logs</a>
         <a class="tool-link" href="/upload" title="Upload documents and files.">📂 Upload File</a>
         <a class="tool-link" href="/docquery" title="Search knowledge base and documents.">🔍 Search Docs</a>
+        <a class="tool-link" href="/history" title="Browse session history.">📆 History</a>
+
+        <h3 style="grid-column: 1/-1;">⚙️ System Ops</h3>
+        <a class="tool-link" href="/terminal" title="Access terminal-like interface.">💻 Terminal</a>
+        <a class="tool-link new" href="/control" title="Control panel and configuration.">🎛️ Control Panel</a>
+        <a class="tool-link" href="/docs_ui" title="Documentation and export tools.">📄 Docs</a>
+        <a class="tool-link" href="/agent_tools" title="Agent utility scripts.">🛠️ Tools</a>
       </div>
     </section>
   </main>

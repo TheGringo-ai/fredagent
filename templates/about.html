@@ -1,0 +1,81 @@
+<nav style="margin-bottom: 1em; font-size: 0.95rem;">
+    <a href="/control" style="margin-right: 1em;">🎛️ Control</a>
+    <a href="/chat" style="margin-right: 1em;">💬 Chat</a>
+    <a href="/devchat" style="margin-right: 1em;">🧠 Dev</a>
+    <a href="/agent" style="margin-right: 1em;">⚙️ Live Agent</a>
+    <a href="/agent_tools" style="margin-right: 1em;">🛠️ Tools</a>
+    <a href="/pricing" style="margin-right: 1em;">💸 Pricing</a>
+</nav>
+<nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.5em;">
+    <span><a href="/">Home</a> &raquo; </span>
+    <span style="font-weight: bold;">About</span>
+</nav>
+
+<h2>📘 About Gringo AI Ops</h2>
+<p>Gringo AI Ops is a full-stack AI automation toolkit built for operations, diagnostics, and intelligent planning
+    workflows.</p>
+
+<h3>🧠 What It Does</h3>
+<ul>
+    <li>AI-powered plan generation, patching, and diagnostics</li>
+    <li>Integrated dashboards for chat, dev tools, terminals, agents, and logs</li>
+    <li>Taskboard and scheduling interface</li>
+</ul>
+
+<h3>🛠 Version & Roadmap</h3>
+<ul>
+    <li><strong>Current version:</strong> v1.0.0</li>
+    <li>Upcoming: realtime collab dashboard, agent handoffs, mobile UI</li>
+</ul>
+
+<h3>📜 License</h3>
+<p>This software is licensed under MIT for non-commercial use. Contact for commercial licensing or support.</p>
+
+<h3>📬 Contact</h3>
+<p>Email: <a href="mailto:fred@gringoaiops.com">fred@gringoaiops.com</a></p>
+
+<button onclick="toggleDarkMode()" style="position: fixed; bottom: 3.5em; right: 1em; z-index: 1000;">🌓 Toggle Dark
+    Mode</button>
+<button onclick="setApiKey()" style="position: fixed; bottom: 1em; right: 1em; z-index: 1000;">🔑 Set API Key</button>
+
+<script>
+    function toggleDarkMode() {
+        const isDark = document.body.classList.toggle("dark-mode");
+        localStorage.setItem("darkMode", isDark ? "true" : "false");
+    }
+    function setApiKey() {
+        const key = prompt("Enter your OpenAI or Gemini API key:");
+        if (key) {
+            localStorage.setItem("apiKey", key);
+            alert("API key saved locally.");
+        }
+    }
+    window.addEventListener("DOMContentLoaded", () => {
+        if (localStorage.getItem("darkMode") === "true") {
+            document.body.classList.add("dark-mode");
+        }
+    });
+</script>
+
+<style>
+    :root {
+        --bg-light: #fff;
+        --bg-dark: #111;
+        --text-light: #111;
+        --text-dark: #eee;
+        --link-dark: #8cf;
+    }
+
+    body {
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .dark-mode {
+        background-color: var(--bg-dark);
+        color: var(--text-dark);
+    }
+
+    .dark-mode a {
+        color: var(--link-dark);
+    }
+</style>

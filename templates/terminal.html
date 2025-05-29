@@ -1,52 +1,88 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import JSONResponse
-import subprocess
-import platform
-import datetime
+<!DOCTYPE html>
+<html lang="en">
 
-router = APIRouter()
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Terminal Tools</title>
+    <style>
+        :root {
+            --bg-light: #fff;
+            --bg-dark: #111;
+            --text-light: #111;
+            --text-dark: #eee;
+            --link-dark: #8cf;
+        }
 
-@router.post("/terminal/exec")
-async def execute_command(request: Request):
-data = await request.json()
-command = data.get("command", "")
-try:
-result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=10)
-output = result.stdout + result.stderr
-return {"output": output.strip()}
-except Exception as e:
-return {"output": f"Error: {str(e)}"}
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
 
-@router.get("/terminal/tools/history")
-async def get_history():
-try:
-with open("terminal.log", "r") as f:
-return {"output": f.read()}
-except FileNotFoundError:
-return {"output": "No history available."}
+        .dark-mode {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
 
-@router.get("/terminal/tools/systeminfo")
-async def get_system_info():
-info = [
-f"System: {platform.system()}",
-f"Node Name: {platform.node()}",
-f"Release: {platform.release()}",
-f"Version: {platform.version()}",
-f"Machine: {platform.machine()}",
-f"Processor: {platform.processor()}",
-f"Time: {datetime.datetime.now().isoformat()}"
-]
-return {"output": "\n".join(info)}
+        .dark-mode a {
+            color: var(--link-dark);
+        }
+    </style>
+</head>
 
-@router.get("/terminal/tools/help")
-async def get_help():
-help_text = """
-Available Terminal Tools:
-- Type a command in the terminal input to run it
-- Tab [📜 History] shows command history
-- Tab [💻 System Info] shows your system details
-- Tab [❓ Help] shows this message
-Shortcuts:
-- ALT+1: History | ALT+2: System Info | ALT+3: Help
-"""
-return {"output": help_text.strip()}
+<body>
+    <nav style="margin-bottom: 1em; font-size: 0.95rem;">
+        <a href="/control" style="margin-right: 1em;">🎛️ Control</a>
+        <a href="/chat" style="margin-right: 1em;">💬 Chat</a>
+        <a href="/devchat" style="margin-right: 1em;">🧠 Dev</a>
+        <a href="/agent" style="margin-right: 1em;">⚙️ Live Agent</a>
+        <a href="/agent_tools" style="margin-right: 1em;">🛠️ Tools</a>
+        <a href="/pricing" style="margin-right: 1em;">💸 Pricing</a>
+    </nav>
+    <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.5em;">
+        <span><a href="/">Home</a> &raquo; </span>
+        <span style="font-weight: bold;">Terminal Tools</span>
+    </nav>
+
+    <!-- Existing terminal tool content here -->
+
+    <script>
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle("dark-mode");
+            localStorage.setItem("darkMode", isDark ? "true" : "false");
+        }
+
+        // Initialize theme on load
+        window.addEventListener("DOMContentLoaded", () => {
+            if (localStorage.getItem("darkMode") === "true") {
+                document.body.classList.add("dark-mode");
+            }
+        });
+    </script>
+
+    </div>
+
+    <!-- 🌓 Toggle Dark Mode Button -->
+    <button onclick="toggleDarkMode()" style="position: fixed; bottom: 3.5em; right: 1em; z-index: 1000;">🌓 Toggle Dark
+        Mode</button>
+
+    <!-- 🔑 API Key Prompt Button -->
+    <button onclick="setApiKey()" style="position: fixed; bottom: 1em; right: 1em; z-index: 1000;">🔑 Set API
+        Key</button>
+
+    <script>
+        function setApiKey() {
+            const key = prompt("Enter your OpenAI or Gemini API key:");
+            if (key) {
+                localStorage.setItem("apiKey", key);
+                alert("API key saved locally.");
+            }
+        }
+
+        function getAuthHeaders() {
+            const apiKey = localStorage.getItem("apiKey");
+            return apiKey ? { "Authorization": `Bearer ${apiKey}` } : {};
+        }
+    </script>
+</body>
+
+</html>

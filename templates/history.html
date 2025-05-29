@@ -11,14 +11,20 @@
             background-color: #f4f4f4;
         }
 
+        body.dark-mode {
+            background-color: #121212;
+            color: #eee;
+        }
+
         nav {
             background-color: #333;
-            padding: 10px;
+            padding: 12px;
+            text-align: center;
         }
 
         nav a {
             color: white;
-            margin-right: 20px;
+            margin: 0 12px;
             text-decoration: none;
             font-weight: bold;
         }
@@ -35,9 +41,36 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
+        body.dark-mode .container {
+            background-color: #1e1e1e;
+        }
+
         h2 {
             color: #333;
             margin-bottom: 20px;
+        }
+
+        body.dark-mode h2 {
+            color: #ddd;
+        }
+
+        button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #555;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #444;
+        }
+
+        input[type="text"] {
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
         }
 
         table {
@@ -71,22 +104,29 @@
 </head>
 
 <body>
-    <nav>
-        <a href="/ui">Home</a>
-        <a href="/ui/chat">Chat</a>
-        <a href="/ui/query">Query</a>
-        <a href="/ui/history">History</a>
-        <a href="/ui/upload">Upload</a>
+    <nav style="margin-bottom: 1em; font-size: 0.95rem;">
+        <a href="/control" style="margin-right: 1em;">🎛️ Control</a>
+        <a href="/chat" style="margin-right: 1em;">💬 Chat</a>
+        <a href="/devchat" style="margin-right: 1em;">🧠 Dev</a>
+        <a href="/agent" style="margin-right: 1em;">⚙️ Live Agent</a>
+        <a href="/agent_tools" style="margin-right: 1em;">🛠️ Tools</a>
+        <a href="/pricing" style="margin-right: 1em;">💸 Pricing</a>
+    </nav>
+    <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.5em;">
+        <span><a href="/">Home</a> &raquo; </span>
+        <span style="font-weight: bold;">Query History</span>
     </nav>
     <div class="container">
         <h2>Query History</h2>
+        <p id="loadingMsg">⏳ Loading history...</p>
+        <div id="errorMsg" style="color:red;"></div>
         {% if history %}
         <!-- Export buttons and search input -->
         <div style="margin-bottom: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px;">
             <button onclick="exportTable('csv')">Export CSV</button>
             <button onclick="exportTable('json')">Export JSON</button>
             <button onclick="exportTable('pdf')">Export PDF</button>
-            <input type="text" id="searchInput" placeholder="Search..." style="margin-left: 16px; padding: 6px;">
+            <input type="text" id="searchInput" placeholder="Search..." style="margin-left: 16px;">
         </div>
         <table id="historyTable">
             <thead>
@@ -96,14 +136,10 @@
                     <th>Response</th>
                 </tr>
             </thead>
-            <tbody id="historyTableBody">
-                <!-- Table body will be rendered by JS -->
-            </tbody>
+            <tbody id="historyTableBody"></tbody>
         </table>
-        <!-- Pagination controls -->
         <div id="paginationControls" style="margin-top: 16px; display: flex; gap: 8px; align-items: center;"></div>
         <script>
-            // Fetch history data from the backend API endpoint
             let historyData = [];
             let filteredData = [];
             let currentPage = 1;
@@ -143,13 +179,11 @@
                 const totalRows = data.length;
                 const totalPages = Math.ceil(totalRows / rowsPerPage);
                 if (totalPages <= 1) return;
-                // Prev button
                 const prevBtn = document.createElement('button');
                 prevBtn.textContent = 'Prev';
                 prevBtn.disabled = currentPage === 1;
                 prevBtn.onclick = () => { currentPage--; updateTable(); };
                 controls.appendChild(prevBtn);
-                // Page numbers
                 for (let p = 1; p <= totalPages; p++) {
                     const btn = document.createElement('button');
                     btn.textContent = p;
@@ -157,7 +191,6 @@
                     btn.onclick = () => { currentPage = p; updateTable(); };
                     controls.appendChild(btn);
                 }
-                // Next button
                 const nextBtn = document.createElement('button');
                 nextBtn.textContent = 'Next';
                 nextBtn.disabled = currentPage === totalPages;
@@ -170,7 +203,6 @@
                 renderPagination(filteredData);
             }
 
-            // Search/filter logic
             document.getElementById('searchInput').addEventListener('input', function () {
                 const val = this.value.trim().toLowerCase();
                 filteredData = historyData.filter(entry =>
@@ -182,12 +214,10 @@
                 updateTable();
             });
 
-            // Export functions
             function exportTable(format) {
                 if (format === 'csv') {
                     let csv = 'Date,Query,Response\n';
                     for (const entry of filteredData) {
-                        // Escape double quotes and commas
                         const row = [entry.date, entry.query, entry.response].map(v =>
                             `"${String(v).replace(/"/g, '""')}"`
                         ).join(',');
@@ -212,10 +242,8 @@
                 document.body.removeChild(link);
             }
 
-            // Simple PDF export using jsPDF CDN
             function exportPDF() {
                 if (!window.jsPDF) {
-                    // Load jsPDF from CDN
                     const script = document.createElement('script');
                     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
                     script.onload = () => _exportPDF();
@@ -224,6 +252,7 @@
                     _exportPDF();
                 }
             }
+
             function _exportPDF() {
                 const { jsPDF } = window.jspdf || window;
                 const doc = new jsPDF();
@@ -246,13 +275,17 @@
                 doc.save('history.pdf');
             }
 
-            // Fetch history data on page load and initialize table
             fetch('/history')
                 .then(res => res.json())
                 .then(data => {
+                    document.getElementById('loadingMsg')?.remove();
                     historyData = data;
                     filteredData = [...historyData];
                     updateTable();
+                })
+                .catch(err => {
+                    document.getElementById('loadingMsg')?.remove();
+                    document.getElementById('errorMsg').innerText = '❌ Failed to load history data.';
                 });
         </script>
         {% else %}

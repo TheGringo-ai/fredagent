@@ -5,6 +5,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>📘 Documentation Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
@@ -47,17 +50,56 @@
 </head>
 
 <body>
-    <nav>
-        <a href="/control">Control</a>
-        <a href="/agent">Agent</a>
-        <a href="/chat">Chat</a>
-        <a href="/devchat">DevChat</a>
-        <a href="/query">Query</a>
-        <a href="/doc/view">Docs</a>
+    <nav style="margin-bottom: 1em; font-size: 0.95rem;">
+        <a href="/control" style="margin-right: 1em;">🎛️ Control</a>
+        <a href="/chat" style="margin-right: 1em;">💬 Chat</a>
+        <a href="/devchat" style="margin-right: 1em;">🧠 Dev</a>
+        <a href="/agent" style="margin-right: 1em;">⚙️ Live Agent</a>
+        <a href="/agent_tools" style="margin-right: 1em;">🛠️ Tools</a>
+    </nav>
+    <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.5em;">
+        <span><a href="/">Home</a> &raquo; </span>
+        <span style="font-weight: bold;">Documentation Viewer</span>
     </nav>
     <div class="container">
-        <h2>📘 Documentation Output</h2>
-        <pre>{{ content }}</pre>
+        <h2 style="margin-bottom: 1em;">📘 Documentation Output</h2>
+        <div style="margin-bottom: 1rem;">
+            <button onclick="toggleView()">🔁 Toggle Raw / Rendered</button>
+            <a href="/doc/view?path=README.md" download class="button">⬇️ Download .md</a>
+            <button onclick="exportToPDF()">📄 Export as PDF</button>
+            <button onclick="exportToZIP()">📦 Export as ZIP</button>
+        </div>
+        <pre id="rawView" style="display:none;">{{ content }}</pre>
+        <div id="renderedView"></div>
+
+        <script>
+            const rawMd = `{{ content | tojson | safe }}`;
+            document.getElementById("renderedView").innerHTML = marked.parse(rawMd);
+
+            function toggleView() {
+                const raw = document.getElementById("rawView");
+                const rendered = document.getElementById("renderedView");
+                raw.style.display = raw.style.display === "none" ? "block" : "none";
+                rendered.style.display = rendered.style.display === "none" ? "block" : "none";
+            }
+
+            function exportToPDF() {
+                const doc = new window.jspdf.jsPDF();
+                doc.text(rawMd, 10, 10);
+                doc.save("README.pdf");
+            }
+
+            function exportToZIP() {
+                const zip = new JSZip();
+                zip.file("README.md", rawMd);
+                zip.generateAsync({ type: "blob" }).then(function (content) {
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(content);
+                    link.download = "docs.zip";
+                    link.click();
+                });
+            }
+        </script>
     </div>
 </body>
 

@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="container dark-mode">
-  <h1>🧠 DevAgent Command Center</h1>
+  <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.25em;">
+    <span><a href="/">Home</a> &raquo; </span>
+    <span style="font-weight: bold;">Live Agent Console</span>
+  </nav>
+  <h2 style="margin-bottom: 1em;">🧠 DevAgent Command Center</h2>
 
   <label for="instruction">Command</label>
   <textarea id="instruction" name="instruction" rows="4" placeholder="Give the agent a task or command..."></textarea>

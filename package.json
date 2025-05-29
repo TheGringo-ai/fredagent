@@ -1,10 +1,17 @@
 {
   "name": "gringo-ai-ops-with-vscode",
   "version": "1.0.0",
+  "description": "FredAgent – AI-Ops automation dashboard powered by FastAPI and LLM planning.",
   "main": "index.js",
-  "scripts": {},
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "scripts": {
+    "start": "echo \"No frontend yet. Backend is Python.\""
+  },
+  "keywords": [
+    "AI-Ops",
+    "FastAPI",
+    "LLM",
+    "automation"
+  ],
+  "author": "Fred Taylor",
+  "license": "MIT"
 }

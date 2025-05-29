@@ -1,5 +1,17 @@
 <section class="control-panel">
 
+    <nav style="margin-bottom: 1em; font-size: 0.95rem;">
+        <a href="/control" style="margin-right: 1em;">🎛️ Control</a>
+        <a href="/chat" style="margin-right: 1em;">💬 Chat</a>
+        <a href="/devchat" style="margin-right: 1em;">🧠 Dev</a>
+        <a href="/agent" style="margin-right: 1em;">⚙️ Live Agent</a>
+        <a href="/agent_tools" style="margin-right: 1em;">🛠️ Tools</a>
+    </nav>
+    <nav aria-label="breadcrumb" style="font-size: 0.95rem; margin-bottom: 1.5em;">
+        <span><a href="/">Home</a> &raquo; </span>
+        <span style="font-weight: bold;">Control Panel</span>
+    </nav>
+
     <div class="control-block">
         <h3>🧠 Auto Plan Builder</h3>
         <p class="helper-text">Enter a goal and let the AI generate, diagnose, and patch a plan automatically.</p>
@@ -17,6 +29,122 @@
     </div>
 
 </section>
+<div class="control-block">
+    <h3>🧠 Memory Tools</h3>
+    <p class="helper-text">Search or summarize semantic memory entries.</p>
+    <label for="embedding-toggle" style="display:block;margin:10px 0;">
+        <input type="checkbox" id="embedding-toggle" onchange="toggleEmbeddingStore()" />
+        Enable Embedding Store
+    </label>
+    <input type="text" id="memory-query" placeholder="Enter memory query">
+    <select id="memory-intent">
+        <option value="">No Intent</option>
+        <option value="debug">Debug</option>
+        <option value="patch">Patch</option>
+        <option value="diagnose">Diagnose</option>
+    </select>
+    <select id="memory-topk">
+        <option value="3">Top 3</option>
+        <option value="5" selected>Top 5</option>
+        <option value="10">Top 10</option>
+    </select>
+    <button onclick="searchMemory()">🔍 Search</button>
+    <button onclick="summarizeMemory()">🧠 Summarize</button>
+    <pre id="memory-output" class="output-area" style="display:none;"></pre>
+    <button onclick="resetMemory()">🧼 Reset Memory Index</button>
+</div>
+
+<div class="control-block">
+    <h3>📤 Export Logs</h3>
+    <p class="helper-text">Download user logs for review or audit.</p>
+    <button onclick="downloadLogs('json')">⬇️ Export JSON</button>
+    <button onclick="downloadLogs('csv')">⬇️ Export CSV</button>
+</div>
+
+<div class="control-block">
+    <h3>📊 Memory System Status</h3>
+    <button onclick="loadSystemStatus()">🔄 Refresh</button>
+    <pre id="systemStatusOutput" style="background:#f4f4f4; padding:1em;"></pre>
+</div>
+
+<div class="control-block">
+    <h3>📚 Log Browser</h3>
+    <form id="logFilterForm">
+        <input type="text" name="contains" placeholder="Keyword filter">
+        <input type="number" name="limit" placeholder="Limit" value="10">
+        <input type="number" name="skip" placeholder="Skip" value="0">
+        <button type="submit">🔍 Fetch Logs</button>
+    </form>
+    <pre id="logResults" style="white-space: pre-wrap; background: #f9f9f9; padding: 1em;"></pre>
+</div>
+
+<div class="control-block">
+    <h3>📈 Intent Breakdown</h3>
+    <button onclick="loadIntentBreakdown()">🧠 Show Stats</button>
+    <pre id="intentStatsOutput" style="white-space: pre-wrap; background: #eef; padding: 1em;"></pre>
+</div>
+
+
+<div class="control-block">
+    <h3>📌 Saved Taskboard Plans</h3>
+    <button onclick="loadTaskboard()">🧾 Load Saved Plans</button>
+    <pre id="taskboardOutput" style="white-space: pre-wrap; background: #fffff0; padding: 1em;"></pre>
+</div>
+
+
+<div class="control-block">
+    <h3>📝 Edit or Schedule Task</h3>
+    <input type="text" id="editTaskId" placeholder="Enter Task/Plan ID" />
+    <textarea id="editTaskText" rows="4" placeholder="Edit task content..."></textarea>
+    <input type="datetime-local" id="taskDueDate" />
+    <div style="margin-top: 0.5em;">
+        <button onclick="updateTask()">💾 Update Task</button>
+        <button onclick="scheduleTask()">📅 Schedule</button>
+    </div>
+    <pre id="editTaskOutput" style="background:#f5f5f5; padding:1em; white-space: pre-wrap;"></pre>
+</div>
+
+<div class="control-block">
+    <h3>📆 Schedule View</h3>
+    <button onclick="toggleScheduleMode('calendar')">📅 Calendar</button>
+    <button onclick="toggleScheduleMode('table')">🗂️ Table</button>
+    <div id="scheduleCalendar" style="display:none; padding:1em;"></div>
+    <table id="scheduleTable" style="display:none; width:100%; background: #fff;">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Text</th>
+                <th>Scheduled For</th>
+            </tr>
+        </thead>
+        <tbody id="scheduleRows"></tbody>
+    </table>
+</div>
+
+<div class="control-block">
+    <h3>🧪 Test Plan Execution</h3>
+    <input type="text" id="testPlanId" placeholder="Enter Plan ID" />
+    <button onclick="runTestPlan()">▶️ Run Plan</button>
+    <pre id="testPlanOutput" style="background:#eef; padding:1em;"></pre>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
+<script>
+    async function autoPlan(e) {
+        e.preventDefault();
+        const goal = document.getElementById("goal").value;
+        const res = await fetch("/dev/plan/auto", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ goal })
+        });
+        const data = await res.json();
+        const out = document.getElementById("patch-result");
+        out.textContent = JSON.stringify(data, null, 2);
+        out.style.display = "block";
+    }
+</script>
 <script>
     function toggleOutput() {
         const output = document.getElementById("patch-result");
@@ -30,5 +158,197 @@
         }, (err) => {
             alert("Failed to copy text: " + err);
         });
+    }
+</script>
+<script>
+    async function searchMemory() {
+        const query = document.getElementById("memory-query").value;
+        const intent = document.getElementById("memory-intent").value;
+        const top_k = document.getElementById("memory-topk").value;
+        const res = await fetch("/memory/search", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query, intent, top_k })
+        });
+        const result = await res.json();
+        const out = document.getElementById("memory-output");
+        out.textContent = JSON.stringify(result, null, 2);
+        out.style.display = "block";
+    }
+
+    async function summarizeMemory() {
+        const query = document.getElementById("memory-query").value;
+        const intent = document.getElementById("memory-intent").value;
+        const top_k = document.getElementById("memory-topk").value;
+        const res = await fetch("/memory/summarize", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query, intent, top_k })
+        });
+        const result = await res.json();
+        const out = document.getElementById("memory-output");
+        out.textContent = result.summary || JSON.stringify(result);
+        out.style.display = "block";
+    }
+
+    function downloadLogs(format) {
+        window.open(`/export_logs?format=${format}`, "_blank");
+    }
+
+</script>
+<script>
+    async function toggleEmbeddingStore() {
+        const enabled = document.getElementById("embedding-toggle").checked;
+        const res = await fetch("/memory/toggle_store", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled })
+        });
+        const msg = await res.text();
+        alert(msg);
+    }
+
+    async function loadSystemStatus() {
+        const res = await fetch("/memory/system");
+        const data = await res.json();
+        const status = data.data;
+
+        const summary = `
+✅ Status: ${status.status}
+🌐 Environment: ${status.env}
+🗃️ Log File Exists: ${status.memory_log_exists ? "Yes" : "No"}
+
+📦 Embedding Store:
+- Enabled: ${status.embedding_store.enabled ? "Yes" : "No"}
+- Count: ${status.embedding_store.count}
+- Max Allowed: ${status.embedding_store.max}
+        `.trim();
+
+        const output = document.getElementById("systemStatusOutput");
+        output.textContent = summary;
+    }
+</script>
+<script>
+    document.getElementById("logFilterForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const form = new FormData(e.target);
+        const params = new URLSearchParams(form).toString();
+        const res = await fetch(`/memory/logs/recent?${params}`);
+        const data = await res.json();
+        const out = document.getElementById("logResults");
+        const entries = data.data.logs || [];
+        out.textContent = entries.length
+            ? entries.map((log, i) => `#${i + 1} – ${log.timestamp}\n${JSON.stringify(log, null, 2)}`).join("\n\n")
+            : "No logs found.";
+    });
+
+    async function resetMemory() {
+        const confirmed = confirm("Are you sure you want to reset the memory index?");
+        if (!confirmed) return;
+        const res = await fetch("/memory/reset", { method: "POST" });
+        const msg = await res.text();
+        alert(msg);
+    }
+
+    async function loadIntentBreakdown() {
+        const res = await fetch("/memory/logs/recent?limit=500");
+        const data = await res.json();
+        const stats = {};
+        for (const log of data.data.logs || []) {
+            const intent = log.intent || "none";
+            stats[intent] = (stats[intent] || 0) + 1;
+        }
+        const out = document.getElementById("intentStatsOutput");
+        out.textContent = Object.entries(stats).map(([intent, count]) => `${intent}: ${count}`).join("\n");
+    }
+
+    async function loadTaskboard() {
+        const res = await fetch("/taskboard/all");
+        const data = await res.json();
+        const out = document.getElementById("taskboardOutput");
+        out.textContent = Object.entries(data).map(([id, p]) =>
+            `📋 ${id}\n${p.text}\n`
+        ).join("\n\n") || "No saved plans found.";
+    }
+
+    async function runTestPlan() {
+        const id = document.getElementById("testPlanId").value;
+        const res = await fetch(`/taskboard/get/${id}`);
+        const data = await res.json();
+        document.getElementById("testPlanOutput").textContent = JSON.stringify(data, null, 2);
+    }
+
+    async function updateTask() {
+        const id = document.getElementById("editTaskId").value.trim();
+        const text = document.getElementById("editTaskText").value.trim();
+        if (!id || !text) return alert("Both ID and text are required.");
+        const res = await fetch("/taskboard/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ plan_id: id, plan_text: text })
+        });
+        document.getElementById("editTaskOutput").textContent = res.ok ? "✅ Task updated." : "❌ Failed to update.";
+    }
+
+    async function scheduleTask() {
+        const id = document.getElementById("editTaskId").value.trim();
+        const date = document.getElementById("taskDueDate").value;
+        if (!id || !date) return alert("Plan ID and date are required.");
+        const text = `📅 Task '${id}' scheduled for ${new Date(date).toLocaleString()}`;
+        const res = await fetch("/taskboard/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({ plan_id: id, plan_text: text })
+        });
+        document.getElementById("editTaskOutput").textContent = res.ok ? "📆 Task scheduled." : "❌ Failed to schedule.";
+    }
+</script>
+
+<script>
+    function toggleScheduleMode(mode) {
+        document.getElementById("scheduleCalendar").style.display = mode === "calendar" ? "block" : "none";
+        document.getElementById("scheduleTable").style.display = mode === "table" ? "table" : "none";
+        if (mode === "calendar") loadCalendarView();
+        if (mode === "table") loadTableView();
+    }
+
+    async function loadCalendarView() {
+        const res = await fetch("/taskboard/all");
+        const data = await res.json();
+        const calendarEl = document.getElementById("scheduleCalendar");
+        calendarEl.innerHTML = ""; // Reset
+
+        const events = Object.entries(data).flatMap(([id, item]) => {
+            const match = item.text.match(/scheduled for (.+)$/);
+            if (match) {
+                return [{
+                    title: id,
+                    start: new Date(match[1]).toISOString(),
+                    allDay: true
+                }];
+            }
+            return [];
+        });
+
+        new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            height: "auto",
+            events: events
+        }).render();
+    }
+
+    async function loadTableView() {
+        const res = await fetch("/taskboard/all");
+        const data = await res.json();
+        const body = document.getElementById("scheduleRows");
+        body.innerHTML = "";
+        for (const [id, item] of Object.entries(data)) {
+            const match = item.text.match(/scheduled for (.+)$/);
+            if (match) {
+                const row = document.createElement("tr");
+                row.innerHTML = `<td>${id}</td><td>${item.text}</td><td>${new Date(match[1]).toLocaleString()}</td>`;
+                body.appendChild(row);
+            }
+        }
     }
 </script>
